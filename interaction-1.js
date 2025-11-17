@@ -12,7 +12,7 @@ let dspNodeParams = null;
 let jsonParams = null;
 
 // Change here to ("tuono") depending on your wasm file name
-const dspName = "french";
+const dspName = "laser";
 const instance = new FaustWasm2ScriptProcessor(dspName);
 
 // output to window or npm package module
@@ -25,7 +25,7 @@ if (typeof module === "undefined") {
 }
 
 // The name should be the same as the WASM file, so change tuono with brass if you use brass.wasm
-french.createDSP(audioContext, 1024)
+laser.createDSP(audioContext, 1024)
     .then(node => {
         dspNode = node;
         dspNode.connect(audioContext.destination);
@@ -33,10 +33,10 @@ french.createDSP(audioContext, 1024)
         const jsonString = dspNode.getJSON();
         jsonParams = JSON.parse(jsonString)["ui"][0]["items"];
         dspNodeParams = jsonParams
-        // const exampleMinMaxParam = findByAddress(dspNodeParams, "/thunder/rumble");
+        const exampleMinMaxParam = findByAddress(dspNodeParams, "/frenchBell/strikeSharpness");
         // // ALWAYS PAY ATTENTION TO MIN AND MAX, ELSE YOU MAY GET REALLY HIGH VOLUMES FROM YOUR SPEAKERS
-        // const [exampleMinValue, exampleMaxValue] = getParamMinMax(exampleMinMaxParam);
-        // console.log('Min value:', exampleMinValue, 'Max value:', exampleMaxValue);
+        const [exampleMinValue, exampleMaxValue] = getParamMinMax(exampleMinMaxParam);
+        console.log('Min value:', exampleMinValue, 'Max value:', exampleMaxValue);
     });
 
 
@@ -56,6 +56,14 @@ function accelerationChange(accx, accy, accz) {
 }
 
 function rotationChange(rotx, roty, rotz) {
+    var flag = false;
+    if((rotx > 20 || rotx < -20) && flag == false){
+        playAudio();
+        flag = true;
+    }
+    else if((rotx < 3 && rotx > -3) && flag == true){
+        flag = false;
+    }
 }
 
 function mousePressed() {
@@ -106,8 +114,8 @@ function playAudio() {
     // them printed on the console of your browser when you load the page)
     // For example if you change to a bell sound, here you could use "/churchBell/gate" instead of
     // "/thunder/rumble".
-    dspNode.setParamValue("/frenchBell/gate", 1)
-    setTimeout(() => { dspNode.setParamValue("/frenchBell/gate", 0) }, 100);
+    dspNode.setParamValue("/laser/trigger", 1)
+    setTimeout(() => { dspNode.setParamValue("/laser/trigger", 0) }, 100);
 }
 
 //==========================================================================================
