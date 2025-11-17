@@ -51,18 +51,19 @@ laser.createDSP(audioContext, 1024)
 //
 //==========================================================================================
 
+let rotationFlag = false;
+
 function accelerationChange(accx, accy, accz) {
     // playAudio()
 }
 
 function rotationChange(rotx, roty, rotz) {
-    var flag = false;
-    if((rotx > 20 || rotx < -20) && flag == false){
+    if((rotx > 20 || rotx < -20) && rotationFlag == false){
         playAudio();
-        flag = true;
+        rotationFlag = true;
     }
-    else if((rotx < 3 && rotx > -3) && flag == true){
-        flag = false;
+    else if((rotx < 3 && rotx > -3) && rotationFlag == true){
+        rotationFlag = false;
     }
 }
 
