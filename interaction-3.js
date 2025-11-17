@@ -93,6 +93,13 @@ function rotationChange(rotx, roty, rotz) {
         playAudio("charge");
         charged = true;
     }
+    else {
+        // Phone is no longer pointed up, stop the laser sound
+        if (!dspNode) {
+            return;
+        }
+        dspNode.setParamValue("/laser/trigger", 0);
+    }
 }
 
 function mousePressed() {
@@ -111,6 +118,7 @@ function deviceShaken() {
     shaketimer = millis();
     statusLabels[0].style("color", "pink");
     playAudio("release");
+    charged = false;
 }
 
 function getMinMaxParam(address) {
@@ -143,7 +151,6 @@ function playAudio(action) {
                 return;
             }
             dspNode.setParamValue("/laser/trigger", 1)
-            setTimeout(() => { dspNode.setParamValue("/laser/trigger", 0) }, 100);
             break;
         case "release":
             if(charged) 
@@ -163,14 +170,6 @@ function playAudio(action) {
         default:
             break;
     }
-    if (!dspNode) {
-        return;
-    }
-    if (audioContext.state === 'suspended') {
-        return;
-    }
-    dspNode.setParamValue("/roulette/drop", 1)
-    setTimeout(() => { dspNode.setParamValue("/roulette/drop", 0) }, 100);
 }
 
 //==========================================================================================
