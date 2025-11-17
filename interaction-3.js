@@ -12,7 +12,7 @@ let dspNodeParams = null;
 let jsonParams = null;
 
 // Change here to ("tuono") depending on your wasm file name
-const dspName = "brass";
+const dspName = "roulette";
 const instance = new FaustWasm2ScriptProcessor(dspName);
 
 // output to window or npm package module
@@ -25,7 +25,7 @@ if (typeof module === "undefined") {
 }
 
 // The name should be the same as the WASM file, so change tuono with brass if you use brass.wasm
-brass.createDSP(audioContext, 1024)
+roulette.createDSP(audioContext, 1024)
     .then(node => {
         dspNode = node;
         dspNode.connect(audioContext.destination);
@@ -51,8 +51,50 @@ brass.createDSP(audioContext, 1024)
 //
 //==========================================================================================
 
+let prevAccY = 0;
+let lastBoingTime = 0;
+const boingCooldown = 800;  // ms
+
+// Require a minimum acceleration strength
+const throwStrengthThreshold = 1.00;
+
+// Flag to indicate a valid throw has started
+let throwStarted = false;
+
 function accelerationChange(accx, accy, accz) {
-    // playAudio()
+    if (!dspNode) return;
+
+    const now = millis();
+
+    // Convert to absolute magnitude for strength check
+    const totalAccel = Math.sqrt(accx*accx + accy*accy + accz*accz);
+
+    // 1. If acceleration strong enough → mark that a throw is happening
+    if (totalAccel > throwStrengthThreshold) {
+        throwStarted = true;
+    }
+
+    // 2. Apex detection: Y-acceleration changes direction (up → down)
+    const directionChangeUpToDown = (prevAccY < 0 && accy > 0);
+
+    // 3. Trigger sound ONLY if:
+    //    - acceleration changed direction
+    //    - the throw had enough initial force
+    //    - cooldown passed
+    if (throwStarted &&
+        directionChangeUpToDown &&
+        (now - lastBoingTime > boingCooldown)) {
+
+        playAudio();
+
+        lastBoingTime = now;
+        statusLabels[2].style("color", "pink");
+
+        // Reset for the next throw
+        throwStarted = false;
+    }
+
+    prevAccY = accy;
 }
 
 function rotationChange(rotx, roty, rotz) {
@@ -95,15 +137,15 @@ function getMinMaxParam(address) {
 //
 //==========================================================================================
 
-function playAudio(pressure) {
+function playAudio() {
     if (!dspNode) {
         return;
     }
     if (audioContext.state === 'suspended') {
         return;
     }
-    console.log(pressure)
-    dspNode.setParamValue("/brass/blower/pressure", pressure)
+    dspNode.setParamValue("/roulette/drop", 1)
+    setTimeout(() => { dspNode.setParamValue("/roulette/drop", 0) }, 100);
 }
 
 //==========================================================================================
