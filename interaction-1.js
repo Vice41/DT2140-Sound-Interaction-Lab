@@ -52,14 +52,20 @@ laser.createDSP(audioContext, 1024)
 //==========================================================================================
 
 let rotationFlag = false;
+let xAccelTriggered = false;
 
 function accelerationChange(accx, accy, accz) {
     if(Math.abs(accy) >= 4) {
         rotationFlag = false;
+        xAccelTriggered = false;
     }
-    if(Math.abs(accx) >= 4 && rotationFlag == false) {
+    if(Math.abs(accx) >= 4 && rotationFlag == false && xAccelTriggered == false) {
         playAudio();
         rotationFlag = true;
+        xAccelTriggered = true;
+    }
+    if(Math.abs(accx) < 1) {
+        xAccelTriggered = false;
     }
 }
 
