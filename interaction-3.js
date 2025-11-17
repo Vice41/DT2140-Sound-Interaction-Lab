@@ -10,9 +10,12 @@
 let dspNode = null;
 let dspNodeParams = null;
 let jsonParams = null;
+let thunderNode = null;
+let thunderNodeParams = null;
+let thunderJsonParams = null;
 
 // Change here to ("tuono") depending on your wasm file name
-const dspName = "roulette";
+const dspName = "laser";
 const instance = new FaustWasm2ScriptProcessor(dspName);
 
 // output to window or npm package module
@@ -25,7 +28,7 @@ if (typeof module === "undefined") {
 }
 
 // The name should be the same as the WASM file, so change tuono with brass if you use brass.wasm
-roulette.createDSP(audioContext, 1024)
+laser.createDSP(audioContext, 1024)
     .then(node => {
         dspNode = node;
         dspNode.connect(audioContext.destination);
@@ -33,7 +36,35 @@ roulette.createDSP(audioContext, 1024)
         const jsonString = dspNode.getJSON();
         jsonParams = JSON.parse(jsonString)["ui"][0]["items"];
         dspNodeParams = jsonParams
-        // const exampleMinMaxParam = findByAddress(dspNodeParams, "/thunder/rumble");
+        // const exampleMinMaxParam = findByAddress(dspNodeParams, "/laser/trigger");
+        // // ALWAYS PAY ATTENTION TO MIN AND MAX, ELSE YOU MAY GET REALLY HIGH VOLUMES FROM YOUR SPEAKERS
+        // const [exampleMinValue, exampleMaxValue] = getParamMinMax(exampleMinMaxParam);
+        // console.log('Min value:', exampleMinValue, 'Max value:', exampleMaxValue);
+    });
+
+// Thunder setup
+const thunderDspName = "thunder";
+const thunderInstance = new FaustWasm2ScriptProcessor(thunderDspName);
+
+// output to window or npm package module
+if (typeof module === "undefined") {
+    window[thunderDspName] = thunderInstance;
+} else {
+    const exp = {};
+    exp[thunderDspName] = thunderInstance;
+    module.exports = exp;
+}
+
+// The name should be the same as the WASM file
+thunder.createDSP(audioContext, 1024)
+    .then(node => {
+        thunderNode = node;
+        thunderNode.connect(audioContext.destination);
+        console.log('params: ', thunderNode.getParams());
+        const jsonString = thunderNode.getJSON();
+        thunderJsonParams = JSON.parse(jsonString)["ui"][0]["items"];
+        thunderNodeParams = thunderJsonParams
+        // const exampleMinMaxParam = findByAddress(thunderNodeParams, "/thunder/rumble");
         // // ALWAYS PAY ATTENTION TO MIN AND MAX, ELSE YOU MAY GET REALLY HIGH VOLUMES FROM YOUR SPEAKERS
         // const [exampleMinValue, exampleMaxValue] = getParamMinMax(exampleMinMaxParam);
         // console.log('Min value:', exampleMinValue, 'Max value:', exampleMaxValue);
@@ -51,58 +82,21 @@ roulette.createDSP(audioContext, 1024)
 //
 //==========================================================================================
 
-let prevAccY = 0;
-let lastBoingTime = 0;
-const boingCooldown = 800;  // ms
-
-// Require a minimum acceleration strength
-const throwStrengthThreshold = 1.00;
-
-// Flag to indicate a valid throw has started
-let throwStarted = false;
+let charged = false;
 
 function accelerationChange(accx, accy, accz) {
-    if (!dspNode) return;
 
-    const now = millis();
-
-    // Convert to absolute magnitude for strength check
-    const totalAccel = Math.sqrt(accx*accx + accy*accy + accz*accz);
-
-    // 1. If acceleration strong enough → mark that a throw is happening
-    if (totalAccel > throwStrengthThreshold) {
-        throwStarted = true;
-    }
-
-    // 2. Apex detection: Y-acceleration changes direction (up → down)
-    const directionChangeUpToDown = (prevAccY < 0 && accy > 0);
-
-    // 3. Trigger sound ONLY if:
-    //    - acceleration changed direction
-    //    - the throw had enough initial force
-    //    - cooldown passed
-    if (throwStarted &&
-        directionChangeUpToDown &&
-        (now - lastBoingTime > boingCooldown)) {
-
-        playAudio();
-
-        lastBoingTime = now;
-        statusLabels[2].style("color", "pink");
-
-        // Reset for the next throw
-        throwStarted = false;
-    }
-
-    prevAccY = accy;
 }
 
 function rotationChange(rotx, roty, rotz) {
+    if(rotx >= 80 && rotx <= 100 && rotz >= 180 && rotz <= 300) {
+        playAudio("charge");
+        charged = true;
+    }
 }
 
 function mousePressed() {
-    playAudio(mouseX/windowWidth)
-    // Use this for debugging from the desktop!
+    //playAudio()
 }
 
 function deviceMoved() {
@@ -116,7 +110,7 @@ function deviceTurned() {
 function deviceShaken() {
     shaketimer = millis();
     statusLabels[0].style("color", "pink");
-    playAudio();
+    playAudio("release");
 }
 
 function getMinMaxParam(address) {
@@ -137,7 +131,38 @@ function getMinMaxParam(address) {
 //
 //==========================================================================================
 
-function playAudio() {
+function playAudio(action) {
+    switch(action) {
+        case "charge":
+            if (!dspNode) 
+            {
+                return;
+            }
+            if (audioContext.state === 'suspended') 
+            {
+                return;
+            }
+            dspNode.setParamValue("/laser/trigger", 1)
+            setTimeout(() => { dspNode.setParamValue("/laser/trigger", 0) }, 100);
+            break;
+        case "release":
+            if(charged) 
+            {
+                if (!thunderNode) 
+                {
+                    return;
+                }
+                if (audioContext.state === 'suspended') 
+                {
+                    return;
+                }
+                thunderNode.setParamValue("/thunder/rumble", 1)
+                setTimeout(() => { thunderNode.setParamValue("/thunder/rumble", 0) }, 100);
+            }
+            break;
+        default:
+            break;
+    }
     if (!dspNode) {
         return;
     }
