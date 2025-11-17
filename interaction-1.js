@@ -55,7 +55,7 @@ let rotationFlag = false;
 let xAccelTriggered = false;
 
 function accelerationChange(accx, accy, accz) {
-    if(Math.abs(accy) >= 4) {
+    if(Math.abs(accy) >= 9) {
         rotationFlag = false;
         xAccelTriggered = false;
     }
