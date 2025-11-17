@@ -55,11 +55,11 @@ let rotationFlag = false;
 let xAccelTriggered = false;
 
 function accelerationChange(accx, accy, accz) {
-    if(Math.abs(accy) >= 9) {
+    if(Math.abs(accy) >= 15) {
         rotationFlag = false;
         xAccelTriggered = false;
     }
-    if(Math.abs(accx) >= 4 && rotationFlag == false && xAccelTriggered == false) {
+    if(Math.abs(accx) >= 10 && rotationFlag == false && xAccelTriggered == false) {
         playAudio();
         rotationFlag = true;
         xAccelTriggered = true;
